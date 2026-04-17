@@ -1,8 +1,11 @@
 """3-stage LLM Council orchestration."""
 
+import logging
 from typing import List, Dict, Any, Tuple
 from .groq import query_models_parallel, query_model
 from .config import COUNCIL_MODELS, CHAIRMAN_MODEL
+
+logger = logging.getLogger(__name__)
 
 
 async def stage1_collect_responses(user_query: str) -> List[Dict[str, Any]]:
@@ -274,8 +277,8 @@ Title:"""
 
     messages = [{"role": "user", "content": title_prompt}]
 
-    # Use gemini-2.5-flash for title generation (fast and cheap)
-    response = await query_model("google/gemini-2.5-flash", messages, timeout=30.0)
+    # Use fastest council model for title generation
+    response = await query_model(COUNCIL_MODELS[0], messages, timeout=30.0)
 
     if response is None:
         # Fallback to a generic title
@@ -308,6 +311,7 @@ async def run_full_council(user_query: str) -> Tuple[List, List, Dict, Dict]:
 
     # If no models responded successfully, return error
     if not stage1_results:
+        logger.error("All council models failed to respond in Stage 1")
         return [], [], {
             "model": "error",
             "response": "All models failed to respond. Please try again."
