@@ -128,11 +128,11 @@ def add_assistant_message(
     stage2: List[Dict[str, Any]],
     stage3: Dict[str, Any],
     metadata: Optional[Dict[str, Any]] = None,
+    stage2_5: Optional[Dict[str, Any]] = None,
 ):
     """
-    Add an assistant message with all 3 stages to a conversation.
-    Metadata (label_to_model, aggregate_rankings) is persisted so that
-    de-anonymization still works when loading old conversations.
+    Add an assistant message with all stages to a conversation.
+    Metadata and debate results are persisted so the full view is available on reload.
     """
     conversation = get_conversation(conversation_id)
     if conversation is None:
@@ -146,6 +146,8 @@ def add_assistant_message(
     }
     if metadata:
         message["metadata"] = metadata
+    if stage2_5:
+        message["stage2_5"] = stage2_5
 
     conversation["messages"].append(message)
     save_conversation(conversation)

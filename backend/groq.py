@@ -2,8 +2,9 @@
 
 import httpx
 import asyncio
+import json
 import logging
-from typing import List, Dict, Any, Optional
+from typing import AsyncGenerator, List, Dict, Any, Optional
 from .config import GROQ_API_KEY, GROQ_API_URL
 
 logger = logging.getLogger(__name__)
@@ -39,12 +40,6 @@ async def query_model(
     """
     Query a single model via Groq API with retry logic.
 
-    Args:
-        model: Groq model identifier
-        messages: List of message dicts with 'role' and 'content'
-        timeout: Request timeout in seconds
-        max_retries: Number of retry attempts for transient failures
-
     Returns:
         Response dict with 'content' and optional 'reasoning_details', or None if failed
     """
@@ -70,6 +65,15 @@ async def query_model(
             response.raise_for_status()
 
             data = response.json()
+
+            # Log token usage
+            usage = data.get("usage", {})
+            if usage:
+                logger.info(
+                    f"[{model}] tokens — in: {usage.get('prompt_tokens', '?')}, "
+                    f"out: {usage.get('completion_tokens', '?')}"
+                )
+
             choices = data.get("choices", [])
             if not choices:
                 logger.warning(f"Empty choices from {model}")
@@ -118,20 +122,64 @@ async def query_model(
     return None
 
 
+async def query_model_stream(
+    model: str,
+    messages: List[Dict[str, str]],
+    timeout: float = 120.0,
+) -> AsyncGenerator[str, None]:
+    """
+    Query a model and yield response content chunks as they arrive.
+
+    Yields:
+        Content delta strings (tokens/chunks from the model)
+    """
+    headers = {
+        "Authorization": f"Bearer {GROQ_API_KEY}",
+        "Content-Type": "application/json",
+    }
+    payload = {
+        "model": model,
+        "messages": messages,
+        "stream": True,
+    }
+
+    client = get_client()
+
+    try:
+        async with client.stream(
+            "POST",
+            GROQ_API_URL,
+            headers=headers,
+            json=payload,
+            timeout=timeout,
+        ) as response:
+            response.raise_for_status()
+
+            async for line in response.aiter_lines():
+                if not line.startswith("data: "):
+                    continue
+                data = line[6:]
+                if data == "[DONE]":
+                    return
+                try:
+                    chunk = json.loads(data)
+                    delta = chunk["choices"][0]["delta"].get("content")
+                    if delta:
+                        yield delta
+                except (json.JSONDecodeError, KeyError, IndexError):
+                    continue
+
+    except httpx.HTTPStatusError as e:
+        logger.error(f"HTTP {e.response.status_code} error streaming {model}")
+    except Exception as e:
+        logger.error(f"Error streaming {model}: {e}")
+
+
 async def query_models_parallel(
     models: List[str],
     messages: List[Dict[str, str]],
 ) -> Dict[str, Optional[Dict[str, Any]]]:
-    """
-    Query multiple models in parallel.
-
-    Args:
-        models: List of Groq model identifiers
-        messages: List of message dicts to send to each model
-
-    Returns:
-        Dict mapping model identifier to response dict (or None if failed)
-    """
+    """Query multiple models in parallel."""
     tasks = [query_model(model, messages) for model in models]
     responses = await asyncio.gather(*tasks)
     return {model: response for model, response in zip(models, responses)}

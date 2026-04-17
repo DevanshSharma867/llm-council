@@ -23,3 +23,28 @@
   line-height: 1.7;
   font-size: 15px;
 }
+
+.streaming-indicator {
+  color: #4a90e2;
+  animation: pulse 1s ease-in-out infinite;
+  margin-left: 4px;
+}
+
+.cursor-blink {
+  display: inline-block;
+  color: #4a90e2;
+  animation: blink 0.7s step-end infinite;
+  font-size: 14px;
+  margin-left: 1px;
+  vertical-align: text-bottom;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
