@@ -5,22 +5,21 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# OpenRouter API key
-OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
+# Groq API key - get one free at https://console.groq.com
+GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 
-# Council members - list of OpenRouter model identifiers
+# Council members - list of Groq model identifiers (currently available in production)
 COUNCIL_MODELS = [
-    "openai/gpt-5.1",
-    "google/gemini-3-pro-preview",
-    "anthropic/claude-sonnet-4.5",
-    "x-ai/grok-4",
+    "llama-3.1-8b-instant",
+    "llama-3.3-70b-versatile",
+    "openai/gpt-oss-20b",
 ]
 
 # Chairman model - synthesizes final response
-CHAIRMAN_MODEL = "google/gemini-3-pro-preview"
+CHAIRMAN_MODEL = "openai/gpt-oss-120b"
 
-# OpenRouter API endpoint
-OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions"
+# Groq API endpoint
+GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions"
 
 # Data directory for conversation storage
 DATA_DIR = "data/conversations"

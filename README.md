@@ -2,7 +2,14 @@
 
 ![llmcouncil](header.jpg)
 
-The idea of this repo is that instead of asking a question to your favorite LLM provider (e.g. OpenAI GPT 5.1, Google Gemini 3.0 Pro, Anthropic Claude Sonnet 4.5, xAI Grok 4, eg.c), you can group them into your "LLM Council". This repo is a simple, local web app that essentially looks like ChatGPT except it uses OpenRouter to send your query to multiple LLMs, it then asks them to review and rank each other's work, and finally a Chairman LLM produces the final response.
+This project is inspired by **Andrej Karpathy's** concept of [reading books together with LLMs](https://x.com/karpathy/status/1990577951671509438). Instead of asking a single LLM, you can assemble them into a "LLM Council" that deliberates together.
+
+This is a simple, local web app that essentially looks like ChatGPT, but with a 3-stage deliberation system:
+- Multiple LLMs answer independently
+- They anonymously review and rank each other's work
+- A Chairman LLM synthesizes the best response
+
+The beauty of this approach is that you get diverse perspectives, anonymous peer review (preventing bias), and a final synthesis—all without needing expensive proprietary APIs.
 
 In a bit more detail, here is what happens when you submit a query:
 
@@ -37,25 +44,26 @@ cd ..
 Create a `.env` file in the project root:
 
 ```bash
-OPENROUTER_API_KEY=sk-or-v1-...
+GROQ_API_KEY=gsk_...
 ```
 
-Get your API key at [openrouter.ai](https://openrouter.ai/). Make sure to purchase the credits you need, or sign up for automatic top up.
+Get your free API key at [console.groq.com](https://console.groq.com/). Groq offers generous free tier rates for fast inference with no payment required.
 
 ### 3. Configure Models (Optional)
 
-Edit `backend/config.py` to customize the council:
+Edit `backend/config.py` to customize the council. The current setup uses Groq's production models:
 
 ```python
 COUNCIL_MODELS = [
-    "openai/gpt-5.1",
-    "google/gemini-3-pro-preview",
-    "anthropic/claude-sonnet-4.5",
-    "x-ai/grok-4",
+    "llama-3.1-8b-instant",
+    "llama-3.3-70b-versatile",
+    "openai/gpt-oss-20b",
 ]
 
-CHAIRMAN_MODEL = "google/gemini-3-pro-preview"
+CHAIRMAN_MODEL = "openai/gpt-oss-120b"
 ```
+
+See [Groq's model list](https://console.groq.com/docs/models) for currently available models.
 
 ## Running the Application
 
@@ -81,7 +89,8 @@ Then open http://localhost:5173 in your browser.
 
 ## Tech Stack
 
-- **Backend:** FastAPI (Python 3.10+), async httpx, OpenRouter API
+- **Backend:** FastAPI (Python 3.10+), async httpx, Groq API
 - **Frontend:** React + Vite, react-markdown for rendering
 - **Storage:** JSON files in `data/conversations/`
 - **Package Management:** uv for Python, npm for JavaScript
+- **LLM Provider:** Groq (free tier with no payment required)
